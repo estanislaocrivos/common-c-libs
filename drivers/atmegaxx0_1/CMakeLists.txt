@@ -5,6 +5,13 @@
 # Without those, avr/io.h can't select the correct register map and this
 # library won't build.
 
+# Self-sufficient like the board layer: pulls in embedded-hal itself if
+# whatever included this driver hasn't already added it.
+if(NOT TARGET embedded-hal)
+    add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../../libraries/embedded-hal
+        ${CMAKE_BINARY_DIR}/embedded-hal)
+endif()
+
 file(GLOB ATMEGAXX0_1_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c")
 

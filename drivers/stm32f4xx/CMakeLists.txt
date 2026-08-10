@@ -8,6 +8,13 @@
 # Requires CPU/FPU flags (-mcpu, -mfpu, -mfloat-abi) to be set by the app,
 # same pattern as the AVR side.
 
+# Self-sufficient like the board layer: pulls in embedded-hal itself if
+# whatever included this driver hasn't already added it.
+if(NOT TARGET embedded-hal)
+    add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../../libraries/embedded-hal
+        ${CMAKE_BINARY_DIR}/embedded-hal)
+endif()
+
 file(GLOB STM32F4XX_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c")
 
