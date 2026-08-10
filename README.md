@@ -1,36 +1,100 @@
-# Common C/C++ Libraries 🎛️
+# Shared C Libraries
 
-A common repository for C/C++ libraries. The aim of this project is to provide a common set of libraries that can be used across different C/C++ projects.
+Shared C libraries for embedded firmware projects.
 
-## Usage
+## Libraries
 
-This repository can be cloned as a submodule in your own project repository. To use it as a submodule, run the following command in your project directory:
+| Library        | Description                                   |
+| -------------- | --------------------------------------------- |
+| `buffer`       | Linear byte buffer with index tracking        |
+| `ring-buffer`  | Circular buffer for streaming data            |
+| `crc`          | CRC-8 calculator with configurable polynomial |
+| `framing`      | Frame parser/builder for serial protocols     |
+| `embedded-hal` | Hardware abstraction layer interfaces         |
+| `logging`      | Lightweight logging utility                   |
+| `drivers/`     | Hardware-specific drivers                     |
 
-```bash
-git submodule add <repository-url> <path>
+## Libraries Repository Structure
+
+```text
+libraries/c/
+├── inc/                  # Shared headers (errno.h)
+├── buffer/
+│   ├── inc/              # Public headers
+│   ├── src/              # Implementation
+│   └── test/             # Unit tests
+├── ring-buffer/
+├── crc/
+├── framing/
+└── embedded-hal/
+...
 ```
+
+Each public header file must have all its public API documented using Doxygen comments.
+
+## Contributing
 
 ## Prerequisites
 
-### Essential tools
+| Tool                                                             | Version | Purpose                |
+| ---------------------------------------------------------------- | ------- | ---------------------- |
+| [Ruby](https://www.ruby-lang.org/en/documentation/installation/) | ≥ 3.0.0 | Ceedling runtime       |
+| [Python](https://www.python.org/downloads/)                      | ≥ 3.8   | Pre-commit hooks       |
+| [GCC](https://gcc.gnu.org/install/)                              | ≥ 9.0   | C compiler for testing |
 
-| Tool | Version | Purpose |
-| ------ | --------- | --------- |
-| [GCC / Clang](https://gcc.gnu.org/) | ≥ 9.0 | C/C++ compiler |
-| [CMake](https://cmake.org/) | ≥ 3.16 | Build toolchain |
+### Coding Style
 
-### Additional tools
+Based on Linux kernel, Barr Group Embedded C, and MISRA-C guidelines.
 
-| Tool | Version | Purpose |
-| ------ | --------- | --------- |
-| [Python](https://www.python.org/downloads/) | ≥ 3.8 | Pre-commit hooks |
-| [Ruby](https://www.ruby-lang.org/en/documentation/installation/) | ≥ 3.0.0 | Ceedling tool (only for testing) |
+**Formatting** (enforced by `.clang-format`):
 
-## Setup and configuration
+- 4-space indentation, no tabs
+- Allman brace style
+- 100-column limit
+- Pointer alignment left: `int* ptr`
 
-### Create a Python virtual environment
+**Naming**:
+
+| Element       | Style               | Example                                |
+| ------------- | ------------------- | -------------------------------------- |
+| Functions     | `module_action`     | `buffer_push`, `framing_init`          |
+| Variables     | `snake_case`        | `payload_size`, `was_initialized`      |
+| Structs/Enums | `struct snake_case` | `struct buffer`, `enum gpio_direction` |
+| Enum values   | `UPPER_SNAKE`       | `FRAMING_START_STATE`, `GPIO_INPUT`    |
+| Macros        | `UPPER_SNAKE`       | `SERIAL_DEFINE`, `EFAULT`              |
+
+**Error handling**:
+
+- Return `int8_t`: `0` = success, `-ERRNO` = failure
+- Validation order: NULL check (`-EFAULT`) → initialized check (`-EPERM`) → value check (`-EINVAL`)
+
+**Struct design**:
+
+```c
+struct module
+{
+    /* public: set before init */
+    uint8_t* const buffer;
+    const size_t   size;
+
+    /* private: do not access directly */
+    bool was_initialized;
+};
+```
+
+**Key principles**:
+
+- Explicit `_init()` required before use.
+- No dynamic allocation — user provides all buffers.
+- Dependency injection via struct fields, not globals.
+- `const` for immutable config fields.
+
+### Development Setup
+
+#### Create a Python Virtual Environment
 
 ```bash
+cd libraries/c/
 python -m venv .venv
 source .venv/bin/activate
 ```
@@ -41,71 +105,59 @@ Install required Python packages:
 pip install -r requirements.txt
 ```
 
-## Building the libraries
+#### Install Ceedling
 
-To build the libraries, you can run the following command in the root directory of the project:
+Unit testing framework for C.
 
-```bash
-mkdir -p build
-cd build
-cmake ..
-make
-```
-
-## Testing environment
-
-A minimal test setup is provided using [Ceedling](https://www.throwtheswitch.org/ceedling) (v1.0.1 or later), which is a test framework for C that provides a simple way to write and run tests for your code. It runs on Ruby, so you need to have Ruby installed on your system. You can install Ruby using your package manager or follow the instructions on the [Ruby website](https://www.ruby-lang.org/en/documentation/installation/) (Ceedling v1.0.1 or later requires Ruby 3.0 or later). After installing Ruby, you can install Ceedling by running:
+- **Docs:** <https://www.throwtheswitch.org/ceedling>
 
 ```bash
 gem install ceedling
 ```
 
-After adding the `ceedling` command to your PATH, you can run the tests by executing the following command in the `test` directory of the project:
+#### Install Pre-commit Hooks
+
+Git hooks for code quality checks.
+
+- **Docs:** <https://pre-commit.com>
 
 ```bash
-ceedling test:all
+cd libraries/c/
+source .venv/bin/activate
+pre-commit install --install-hooks -t pre-commit -t commit-msg
 ```
 
-To run a specific test file, you can run:
+#### Install Doxygen (optional)
+
+Documentation generator.
+
+- **Docs:** <https://www.doxygen.nl/manual/install.html>
 
 ```bash
-ceedling test:your_test_file
+sudo apt install doxygen        # Debian/Ubuntu
+sudo dnf install doxygen        # Fedora
+sudo pacman -S doxygen          # Arch
 ```
 
-## Generating documentation
+## Testing
 
-Doxygen is the default chosen tool for generating documentation from annotated source code. To install Doxygen, follow the instructions on the [Doxygen website](https://www.doxygen.nl/download.html) or use your package manager. For example, on Ubuntu:
+Each library has its own Ceedling project. Navigate to the library directory first:
 
 ```bash
-sudo apt install doxygen
+cd <library>/   # e.g., cd buffer/
 ```
 
-Once Doxygen is installed, you can generate the documentation by running the following command in the root directory of the project:
+| Command                | Description              |
+| ---------------------- | ------------------------ |
+| `ceedling test:all`    | Run all tests            |
+| `ceedling test:<name>` | Run specific test        |
+| `ceedling gcov:all`    | Generate coverage report |
+
+## Generating Documentation
+
+Generate documentation using Doxygen:
 
 ```bash
+cd libraries/c/
 doxygen Doxyfile
 ```
-
-## Adding a new library to the project
-
-To add a new library to the project, you may use the `new-lib-template` folder as a template. Follow these steps:
-
-1. Copy the `new-lib-template` folder and rename it to your library name.
-
-2. Update the `CMakeLists.txt` file in the root directory of your library to match your library name and source files:
-
-   ```cmake
-   add_subdirectory(my_library)
-   ```
-
-3. Add your source files to the `src` directory, your header files to the `inc` directory (if any), and your test files to the `test` directory (if any).
-
-4. Update the `CMakeLists.txt` file inside your library folder to include your source files, replacing the template library identifiers (`NEW_LIB_TEMPLATE_SOURCES` and `new-lib-template`) with the proper ones.
-
-5. If you added tests to the `test` directory, you must add the path to the new library inside the `project.yml`, under the `:paths:` section, so that Ceedling can find the library when running the tests.
-
-6. You may also add the new headers files path to the `vscode/c_cpp_properties.json` file for better IntelliSense support in Visual Studio Code.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
