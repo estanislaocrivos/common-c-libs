@@ -16,3 +16,11 @@ add_subdirectory(libraries/esp8266ex-wifi)
 add_subdirectory(libraries/framing)
 add_subdirectory(libraries/logging)
 add_subdirectory(libraries/uip)
+
+# Board selection: pass -DBOARD=<name>, matching a directory under boards/,
+# to pull in that board's target (which pulls in its own MCU driver).
+# Drivers are NOT added unconditionally here — most only compile under
+# their matching toolchain (avr-gcc, arm-none-eabi-gcc, ...).
+if(BOARD)
+    add_subdirectory(boards/${BOARD})
+endif()
