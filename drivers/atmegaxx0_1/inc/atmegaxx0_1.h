@@ -3,6 +3,7 @@
 
 /* ========================================================================== */
 
+#include "atmegaxx0_1_adc.h"
 #include "atmegaxx0_1_gpio.h"
 #include "atmegaxx0_1_i2c.h"
 #include "atmegaxx0_1_spi.h"
