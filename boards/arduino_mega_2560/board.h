@@ -23,6 +23,7 @@
 
 /* ========================================================================== */
 
+#define PLATFORM_ADC_OPS    atmegaxx0_1_adc_ops
 #define PLATFORM_GPIO_OPS   atmegaxx0_1_gpio_ops
 #define PLATFORM_I2C_OPS    atmegaxx0_1_twi_ops
 #define PLATFORM_SPI_OPS    atmegaxx0_1_spi_ops
