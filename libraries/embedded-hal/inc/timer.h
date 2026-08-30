@@ -3,6 +3,7 @@
 
 /* ========================================================================== */
 
+#include <stdbool.h>
 #include <stdint.h>
 
 /* ========================================================================== */
@@ -104,6 +105,87 @@ struct timer
      * be modified after initialization.
      */
     const struct timer_ops* const ops;
+};
+
+/* ========================================================================== */
+
+/**
+ * @brief Periodic tick source structure. Represents a hardware timer configured
+ * to generate ticks at a fixed period.
+ */
+struct tick_source;
+
+/* ========================================================================== */
+
+/**
+ * @brief Prototype for the tick source callback function. Called from the
+ * timer's ISR context on every tick.
+ * @param context Pointer to user-defined context data (can be NULL).
+ */
+typedef void (*tick_source_callback_t)(void* context);
+
+/* ========================================================================== */
+
+/**
+ * @brief Tick source operations structure.
+ */
+struct tick_source_ops
+{
+    /**
+     * @brief Configures the tick period and starts the tick source.
+     * @param self Pointer to the tick source structure.
+     * @param period_ms Period between ticks in milliseconds.
+     * @return int8_t Returns 0 on success, -EINVAL if the requested period is
+     * not achievable exactly by the underlying hardware, or -ERR on failure
+     * (see errno.h).
+     */
+    int8_t (*initialize)(struct tick_source* self, uint32_t period_ms);
+
+    /**
+     * @brief Sets the callback function invoked from the ISR on every tick.
+     * Pass NULL as callback to disable.
+     * @param self Pointer to the tick source structure.
+     * @param callback Callback function (or NULL to disable).
+     * @param context Pointer to user-defined context data (can be NULL).
+     * @return int8_t Returns 0 on success or -ERR on failure (see errno.h).
+     */
+    int8_t (*set_callback)(
+        struct tick_source*    self,
+        tick_source_callback_t callback,
+        void*                  context);
+
+    /**
+     * @brief Consumes one pending tick. Pending ticks are accumulated in the
+     * ISR, so back-to-back ticks are not lost between polls.
+     * @param self Pointer to the tick source structure.
+     * @return true if a tick was pending and consumed, false otherwise.
+     */
+    bool (*consume_tick)(struct tick_source* self);
+
+    /**
+     * @brief Returns the total number of ticks elapsed since initialize().
+     * @note The counter is monotonic and wraps at 2^32 without notice
+     * (~136 years at 1 s/tick, ~49 days at 1 ms/tick).
+     * @param self Pointer to the tick source structure.
+     * @return uint32_t Total ticks elapsed.
+     */
+    uint32_t (*get_ticks)(struct tick_source* self);
+};
+
+/* ========================================================================== */
+
+struct tick_source
+{
+    /**
+     * @brief Tick source identifier. Useful when several tick sources share the
+     * same ops table.
+     */
+    uint8_t id;
+
+    /**
+     * @brief Pointer to the tick source operations structure.
+     */
+    const struct tick_source_ops* const ops;
 };
 
 /* ========================================================================== */
